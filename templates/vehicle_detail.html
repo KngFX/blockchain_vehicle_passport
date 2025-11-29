@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Vehicle Passport - Vehicle Passport Blockchain</title>
+
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/DataTables/css/datatables.min.css">
+    <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a href="/" class="navbar-brand">Vehicle Passport</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/chain" class="nav-link">Blockchain</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/validate" class="nav-link">Validate</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- VIN Search -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Vehicle Passport</h4>
+                    <p class="card-text">Enter a VIN to view complete vehicle history</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container alert alert-secondary">
+        <div class="row">
+            <label class="col-sm-2">VIN:</label>
+            <div class="col-sm-8">
+                <input type="text" id="vin_input" class="form-control" placeholder="Enter VIN">
+            </div>
+            <div class="col-sm-2">
+                <button type="button" id="search_button" class="btn btn-primary btn-block">Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicle Info Card -->
+    <div class="container" id="vehicle_info_container" style="display: none;">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5>Vehicle Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>VIN:</strong> <span id="info_vin"></span></p>
+                        <p><strong>Make:</strong> <span id="info_make"></span></p>
+                        <p><strong>Model:</strong> <span id="info_model"></span></p>
+                        <p><strong>Year:</strong> <span id="info_year"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Current Owner:</strong> <span id="info_owner"></span></p>
+                        <p><strong>Latest Mileage:</strong> <span id="info_mileage"></span> miles</p>
+                        <p><strong>Total Transactions:</strong> <span id="info_tx_count"></span></p>
+                        <p><strong>Registered By:</strong> <span id="info_creator"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br>
+
+    <!-- Transaction History -->
+    <div class="container" id="history_container" style="display: none;">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Transaction History</h4>
+                </div>
+            </div>
+        </div>
+        <table id="history_table" class="table table-bordered" cellspacing="0" width="100%">
+        </table>
+    </div>
+
+    <!-- Error Message -->
+    <div class="container" id="error_container" style="display: none;">
+        <div class="alert alert-danger">
+            <h5>Vehicle Not Found</h5>
+            <p>No vehicle found with the specified VIN.</p>
+        </div>
+    </div>
+
+    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/vendor/DataTables/js/datatables.min.js"></script>
+    <script src="/static/vendor/DataTables/js/ellipsis.js"></script>
+
+    <script>
+        $(function() {
+            // Check if VIN is in URL path
+            const urlPath = window.location.pathname;
+            const vinMatch = urlPath.match(/\/vehicles\/(.+)/);
+            if (vinMatch && vinMatch[1]) {
+                $('#vin_input').val(vinMatch[1]);
+                loadVehicle(vinMatch[1]);
+            }
+
+            $('#search_button').click(function() {
+                const vin = $('#vin_input').val();
+                if (vin) {
+                    loadVehicle(vin);
+                } else {
+                    alert('Please enter a VIN');
+                }
+            });
+
+            function loadVehicle(vin) {
+                // Hide all containers
+                $('#vehicle_info_container').hide();
+                $('#history_container').hide();
+                $('#error_container').hide();
+
+                $.ajax({
+                    url: `/api/vehicle/${vin}`,
+                    type: 'GET',
+                    success: function(response) {
+                        displayVehicleInfo(response.info);
+                        displayHistory(response.history);
+                        $('#vehicle_info_container').show();
+                        $('#history_container').show();
+                    },
+                    error: function(xhr) {
+                        $('#error_container').show();
+                    }
+                });
+            }
+
+            function displayVehicleInfo(info) {
+                $('#info_vin').text(info.vin || 'N/A');
+                $('#info_make').text(info.make || 'N/A');
+                $('#info_model').text(info.model || 'N/A');
+                $('#info_year').text(info.year || 'N/A');
+                $('#info_owner').text(info.current_owner || 'N/A');
+                $('#info_mileage').text(info.latest_mileage !== null ? info.latest_mileage : 'N/A');
+                $('#info_tx_count').text(info.total_transactions || 0);
+                $('#info_creator').text(info.created_by || 'N/A');
+            }
+
+            function displayHistory(history) {
+                // Clear existing table if it exists
+                if ($.fn.DataTable.isDataTable('#history_table')) {
+                    $('#history_table').DataTable().destroy();
+                }
+
+                let transactions = [];
+
+                for (let i = 0; i < history.length; i++) {
+                    let tx = history[i];
+                    
+                    // Format timestamp
+                    let date = new Date(tx.timestamp * 1000);
+                    let formattedDate = date.toLocaleString();
+
+                    // Format payload details
+                    let details = formatPayload(tx.type, tx.payload);
+
+                    let transaction = [
+                        i + 1,
+                        tx.type,
+                        tx.actor_id,
+                        tx.role,
+                        details,
+                        formattedDate
+                    ];
+
+                    transactions.push(transaction);
+                }
+
+                $('#history_table').DataTable({
+                    data: transactions,
+                    columns: [
+                        { title: "#" },
+                        { title: "Type" },
+                        { title: "Actor" },
+                        { title: "Role" },
+                        { title: "Details" },
+                        { title: "Timestamp" }
+                    ],
+                    order: [[0, 'desc']], // Most recent first
+                    columnDefs: [
+                        { targets: [1, 2, 3, 4], render: $.fn.dataTable.render.ellipsis(30) }
+                    ]
+                });
+            }
+
+            function formatPayload(type, payload) {
+                switch(type) {
+                    case 'VEHICLE_CREATED':
+                        return `Make: ${payload.make}, Model: ${payload.model}, Year: ${payload.year}, Initial Mileage: ${payload.initial_mileage}`;
+                    case 'MILEAGE_UPDATE':
+                        return `New Mileage: ${payload.new_mileage}${payload.description ? ', ' + payload.description : ''}`;
+                    case 'SERVICE_RECORD':
+                        return `Service: ${payload.service_type}${payload.description ? ', ' + payload.description : ''}`;
+                    case 'ACCIDENT_RECORD':
+                        return `Severity: ${payload.severity}${payload.description ? ', ' + payload.description : ''}`;
+                    case 'OWNERSHIP_TRANSFER':
+                        return `New Owner: ${payload.new_owner_id}`;
+                    default:
+                        return JSON.stringify(payload);
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Validate Chain - Vehicle Passport</title>
+
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a href="/" class="navbar-brand">Vehicle Passport</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/chain" class="nav-link">Blockchain</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a href="/validate" class="nav-link">Validate</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Blockchain Validation</h4>
+                    <p class="card-text">Verify the integrity of the blockchain</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <button type="button" id="validate_button" class="btn btn-primary btn-lg">
+                    <i class="fa fa-shield"></i> Validate Blockchain
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <br>
+
+    <div class="container">
+        <div id="result_container" style="display: none;">
+            <div class="alert" id="result_alert">
+                <h4 id="result_title"></h4>
+                <p id="result_message"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(function() {
+            $('#validate_button').click(function() {
+                $.ajax({
+                    url: '/api/validate',
+                    type: 'GET',
+                    success: function(response) {
+                        $('#result_container').show();
+                        
+                        if (response.valid) {
+                            $('#result_alert').removeClass('alert-danger').addClass('alert-success');
+                            $('#result_title').html('<i class="fa fa-check-circle"></i> Blockchain is Valid');
+                            $('#result_message').text(`All ${response.total_blocks} blocks have been verified. The blockchain integrity is intact.`);
+                        } else {
+                            $('#result_alert').removeClass('alert-success').addClass('alert-danger');
+                            $('#result_title').html('<i class="fa fa-times-circle"></i> Blockchain is Invalid');
+                            $('#result_message').text(`The blockchain has been tampered with or corrupted. Total blocks: ${response.total_blocks}`);
+                        }
+                    },
+                    error: function(error) {
+                        console.log(error);
+                        alert('Validation failed');
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

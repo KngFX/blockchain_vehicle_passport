@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Register Vehicle - Vehicle Passport</title>
+
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a href="/" class="navbar-brand">Vehicle Passport</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a href="/vehicles/register" class="nav-link">Register Vehicle</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/chain" class="nav-link">Blockchain</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Register New Vehicle</h4>
+                    <p class="card-text">Enter vehicle details to create a blockchain record</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container alert alert-secondary">
+        <form id="register_form">
+            <div class="row">
+                <label class="col-sm-2">VIN:</label>
+                <div class="col-sm-10">
+                    <input type="text" name="vin" id="vin" class="form-control" required>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <label class="col-sm-2">Make:</label>
+                <div class="col-sm-10">
+                    <input type="text" name="make" id="make" class="form-control" required>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <label class="col-sm-2">Model:</label>
+                <div class="col-sm-10">
+                    <input type="text" name="model" id="model" class="form-control" required>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <label class="col-sm-2">Year:</label>
+                <div class="col-sm-10">
+                    <input type="number" name="year" id="year" class="form-control" required>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <label class="col-sm-2">Initial Mileage:</label>
+                <div class="col-sm-10">
+                    <input type="number" name="initial_mileage" id="initial_mileage" class="form-control" required>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <label class="col-sm-2">Owner ID (optional):</label>
+                <div class="col-sm-10">
+                    <input type="text" name="owner_id" id="owner_id" class="form-control" placeholder="Leave blank for current user">
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">Register Vehicle</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(function() {
+            $('#register_form').submit(function(e) {
+                e.preventDefault();
+
+                const data = {
+                    vin: $('#vin').val(),
+                    make: $('#make').val(),
+                    model: $('#model').val(),
+                    year: $('#year').val(),
+                    initial_mileage: $('#initial_mileage').val(),
+                    owner_id: $('#owner_id').val() || undefined
+                };
+
+                $.ajax({
+                    url: '/api/vehicle/register',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        alert('Vehicle registered successfully!');
+                        window.location.href = '/vehicles/' + response.vin;
+                    },
+                    error: function(xhr) {
+                        const error = xhr.responseJSON ? xhr.responseJSON.error : 'Registration failed';
+                        alert('Error: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

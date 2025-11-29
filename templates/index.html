@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Vehicle Passport Blockchain</title>
+
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/DataTables/css/datatables.min.css">
+    <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a href="/" class="navbar-brand">Vehicle Passport</a>
+
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item active">
+                        <a href="/" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/chain" class="nav-link">Blockchain</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/validate" class="nav-link">Validate</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Session Status -->
+    <div class="container" id="session_status" style="display: none;">
+        <div class="alert alert-info">
+            Logged in as: <strong id="current_user_display"></strong> 
+            (<span id="current_role_display"></span>)
+            <button class="btn btn-sm btn-danger float-right" id="logout_button">Logout</button>
+        </div>
+    </div>
+
+    <!-- Role Selection -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Vehicle Passport System</h4>
+                    <p class="card-text">Select your role and user to access the system</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container alert alert-secondary">
+        <form id="role_selection_form">
+            <div class="row">
+                <label class="col-sm-2">Select Role:</label>
+                <div class="col-sm-10">
+                    <select name="role" id="role_select" class="form-control">
+                        <option value="">-- Choose Role --</option>
+                    </select>
+                </div>
+            </div>
+            <br>
+            <div class="row" id="user_selection_row" style="display: none;">
+                <label class="col-sm-2">Select User:</label>
+                <div class="col-sm-10">
+                    <select name="user_id" id="user_select" class="form-control">
+                        <option value="">-- Choose User --</option>
+                    </select>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <button type="button" id="login_button" class="btn btn-primary btn-lg">Login</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <hr>
+
+    <!-- Available Actions -->
+    <div class="container" id="actions_container" style="display: none;">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Available Actions</h4>
+                </div>
+            </div>
+        </div>
+        <div class="row" id="actions_list">
+            <!-- Actions will be dynamically added here -->
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- Blockchain Statistics -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Blockchain Statistics</h4>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 id="stat_blocks">-</h2>
+                        <p>Total Blocks</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 id="stat_vehicles">-</h2>
+                        <p>Total Vehicles</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 id="stat_pending">-</h2>
+                        <p>Pending Transactions</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 id="stat_valid">-</h2>
+                        <p>Chain Status</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/vendor/DataTables/js/datatables.min.js"></script>
+    <script src="/static/vendor/DataTables/js/ellipsis.js"></script>
+
+    <script>
+        $(function() {
+            // Load roles on page load
+            loadRoles();
+            loadSession();
+            loadStats();
+
+            // Role selection change - load users for that role
+            $('#role_select').change(function() {
+                const role = $(this).val();
+                if (role) {
+                    loadUsersForRole(role);
+                    $('#user_selection_row').show();
+                } else {
+                    $('#user_selection_row').hide();
+                }
+            });
+
+            // Login button
+            $('#login_button').click(function() {
+                const role = $('#role_select').val();
+                const user_id = $('#user_select').val();
+
+                if (!role || !user_id) {
+                    alert('Please select both role and user');
+                    return;
+                }
+
+                $.ajax({
+                    url: '/api/session/set',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ role: role, user_id: user_id }),
+                    success: function() {
+                        loadSession();
+                        loadActions(role);
+                    },
+                    error: function(error) {
+                        console.log(error);
+                        alert('Login failed');
+                    }
+                });
+            });
+
+            // Logout button
+            $('#logout_button').click(function() {
+                $.ajax({
+                    url: '/api/session/clear',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    success: function() {
+                        location.reload();
+                    }
+                });
+            });
+
+            function loadRoles() {
+                $.ajax({
+                    url: '/api/roles',
+                    type: 'GET',
+                    success: function(response) {
+                        const select = $('#role_select');
+                        response.roles.forEach(function(role) {
+                            select.append(`<option value="${role}">${role}</option>`);
+                        });
+                    }
+                });
+            }
+
+            function loadUsersForRole(role) {
+                $.ajax({
+                    url: `/api/users/${role}`,
+                    type: 'GET',
+                    success: function(response) {
+                        const select = $('#user_select');
+                        select.empty();
+                        select.append('<option value="">-- Choose User --</option>');
+                        response.users.forEach(function(user) {
+                            select.append(`<option value="${user.user_id}">${user.user_id}</option>`);
+                        });
+                    }
+                });
+            }
+
+            function loadSession() {
+                $.ajax({
+                    url: '/api/session/get',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.user_id && response.role) {
+                            $('#current_user_display').text(response.user_id);
+                            $('#current_role_display').text(response.role);
+                            $('#session_status').show();
+                            loadActions(response.role);
+                        } else {
+                            $('#session_status').hide();
+                            $('#actions_container').hide();
+                        }
+                    }
+                });
+            }
+
+            function loadActions(role) {
+                const actionMap = {
+                    'MANUFACTURER': [
+                        { label: 'Register Vehicle', url: '/vehicles/register', icon: 'car' },
+                        { label: 'Transfer Ownership', url: '/vehicles/transfer', icon: 'exchange' }
+                    ],
+                    'DMV': [
+                        { label: 'Register Vehicle', url: '/vehicles/register', icon: 'car' },
+                        { label: 'Transfer Ownership', url: '/vehicles/transfer', icon: 'exchange' }
+                    ],
+                    'MECHANIC': [
+                        { label: 'Update Mileage', url: '/vehicles/mileage', icon: 'tachometer' },
+                        { label: 'Add Service Record', url: '/vehicles/service', icon: 'wrench' }
+                    ],
+                    'INSURER': [
+                        { label: 'Report Accident', url: '/vehicles/accident', icon: 'warning' }
+                    ],
+                    'BUYER': []
+                };
+
+                const actions = actionMap[role] || [];
+                const container = $('#actions_list');
+                container.empty();
+
+                if (actions.length === 0) {
+                    container.append('<div class="col-lg-12"><p class="text-muted">No actions available for this role (read-only access)</p></div>');
+                } else {
+                    actions.forEach(function(action) {
+                        container.append(`
+                            <div class="col-md-4">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <i class="fa fa-${action.icon} fa-3x"></i>
+                                        <h5 class="card-title">${action.label}</h5>
+                                        <a href="${action.url}" class="btn btn-primary">Go</a>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                    });
+                }
+
+                $('#actions_container').show();
+            }
+
+            function loadStats() {
+                $.ajax({
+                    url: '/api/stats',
+                    type: 'GET',
+                    success: function(response) {
+                        $('#stat_blocks').text(response.total_blocks);
+                        $('#stat_vehicles').text(response.total_vehicles);
+                        $('#stat_pending').text(response.pending_transactions);
+                        $('#stat_valid').text(response.chain_valid ? 'Valid ✓' : 'Invalid ✗');
+                    }
+                });
+            }
+
+            // Refresh stats every 5 seconds
+            setInterval(loadStats, 5000);
+        });
+    </script>
+
+</body>
+</html>
