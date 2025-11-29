@@ -56,8 +56,9 @@ def vehicle_accident():
 def vehicle_transfer():
     return render_template('vehicle_transfer.html')
 
+@app.route('/vehicles/')
 @app.route('/vehicles/<vin>')
-def vehicle_detail(vin):
+def vehicle_detail(vin=None):
     return render_template('vehicle_detail.html')
 
 @app.route('/chain')

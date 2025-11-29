@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Transfer Ownership - Vehicle Passport</title>
+
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/vendor/font-awesome/font-awesome.min.css">
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a href="/" class="navbar-brand">Vehicle Passport</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/vehicles/register" class="nav-link">Register Vehicle</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/chain" class="nav-link">Blockchain</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">Transfer Vehicle Ownership</h4>
+                    <p class="card-text">Transfer legal ownership of a vehicle to another user.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container alert alert-secondary">
+        <form id="transfer_form">
+            <div class="row">
+                <label class="col-sm-2">VIN:</label>
+                <div class="col-sm-10">
+                    <input type="text" name="vin" id="vin" class="form-control" placeholder="Enter Vehicle VIN" required>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <label class="col-sm-2">New Owner ID:</label>
+                <div class="col-sm-10">
+                    <input type="text" name="new_owner_id" id="new_owner_id" class="form-control" placeholder="e.g. buyer_1" required>
+                </div>
+            </div>
+            <br>
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <button type="submit" class="btn btn-warning btn-lg">Transfer Ownership</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="/static/vendor/jquery/jquery.min.js"></script>
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(function() {
+            // Check if VIN is passed in URL query params (optional ease-of-use feature)
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.has('vin')) {
+                $('#vin').val(urlParams.get('vin'));
+            }
+
+            $('#transfer_form').submit(function(e) {
+                e.preventDefault();
+
+                const data = {
+                    vin: $('#vin').val(),
+                    new_owner_id: $('#new_owner_id').val()
+                };
+
+                $.ajax({
+                    url: '/api/vehicle/transfer',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(response) {
+                        alert('Ownership transferred successfully!');
+                        // Redirect to the vehicle detail page to see the update
+                        window.location.href = '/vehicles/' + data.vin;
+                    },
+                    error: function(xhr) {
+                        const error = xhr.responseJSON ? xhr.responseJSON.error : 'Transfer failed';
+                        alert('Error: ' + error);
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
